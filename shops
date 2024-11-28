@@ -1,0 +1,223 @@
+import tkinter as tk
+from tkinter import messagebox
+from PIL import Image, ImageTk
+import mysql.connector
+
+# MySQL database connection
+def connect_to_db():
+    return mysql.connector.connect(
+        host="localhost",
+        user="root",  # Replace with your MySQL username
+        password="admin",  # Replace with your MySQL password
+        database="shoppings"
+    )
+
+# INR to USD conversion rate (for example, 1 USD = 83 INR)
+USD_TO_INR_CONVERSION_RATE = 83
+
+# Function to convert USD to INR
+def convert_to_inr(price_in_usd):
+    return price_in_usd * USD_TO_INR_CONVERSION_RATE
+
+# Function to load products from the database
+def load_products():
+    db = connect_to_db()
+    cursor = db.cursor()
+    cursor.execute("SELECT * FROM products")
+    products = cursor.fetchall()
+    db.close()
+    return products
+
+# Add to cart function
+def add_to_cart(product_id, product_name, product_price_usd):
+    # Convert product price from USD to INR
+    product_price_inr = convert_to_inr(product_price_usd)
+
+    cart.append({
+        "id": product_id,
+        "name": product_name,
+        "price": product_price_inr  # Store price in INR
+    })
+    update_cart_display()
+
+# Remove from cart function
+def remove_from_cart(product_id):
+    global cart
+    cart = [item for item in cart if item["id"] != product_id]
+    update_cart_display()
+
+# Update cart display
+def update_cart_display():
+    cart_display.delete(1.0, tk.END)
+    total_price = 0
+    for item in cart:
+        cart_display.insert(tk.END, f"{item['name']} - ₹{item['price']:.2f}\n")
+        total_price += item["price"]
+    total_label.config(text=f"Total: ₹{total_price:.2f}")
+
+# Show order details
+# Show order details
+def show_order_details(user_name, address, total_price):
+    # Create a new window for order details
+    order_window = tk.Toplevel(root)
+    order_window.title("Order Details")
+
+    # Set a title for the order details window
+    order_label = tk.Label(order_window, text="Order Details", font=("Helvetica", 16, "bold"))
+    order_label.grid(row=0, column=0, columnspan=2, pady=10)
+
+    # Name label and value
+    details_label = tk.Label(order_window, text="Name:", anchor='e', width=15)  # Right-align label
+    details_label.grid(row=1, column=0, padx=5, pady=5)
+    name_value_label = tk.Label(order_window, text=f"{user_name}")
+    name_value_label.grid(row=1, column=1, padx=5, pady=5)
+
+    # Address label and value
+    address_label = tk.Label(order_window, text="Address:", anchor='e', width=15)  # Right-align label
+    address_label.grid(row=2, column=0, padx=5, pady=5)
+    address_value_label = tk.Label(order_window, text=f"{address}")
+    address_value_label.grid(row=2, column=1, padx=5, pady=5)
+
+    # Total price
+    total_label = tk.Label(order_window, text=f"Total Price: ₹{total_price:.2f}")
+    total_label.grid(row=3, column=0, columnspan=2, pady=10)
+
+    # Show cart items
+    cart_label = tk.Label(order_window, text="Items Ordered:")
+    cart_label.grid(row=4, column=0, columnspan=2)
+
+    # Loop through each cart item and display it
+    row = 5
+    for item in cart:
+        item_label = tk.Label(order_window, text=f"- {item['name']} - ₹{item['price']:.2f}")
+        item_label.grid(row=row, column=0, columnspan=2, padx=5, pady=2)
+        row += 1
+
+    # Close button
+    close_button = tk.Button(order_window, text="Close", command=order_window.destroy)
+    close_button.grid(row=row, column=0, columnspan=2, pady=10)
+
+# Checkout function
+def checkout():
+    user_name = user_name_entry.get()
+    address = address_entry.get("1.0", tk.END).strip()
+
+    if not user_name or not address or len(cart) == 0:
+        messagebox.showerror("Error", "Please provide user details and add items to the cart.")
+        return
+
+    # Calculate total price in INR
+    total_price = sum(item["price"] for item in cart)
+
+    # Insert order into MySQL
+    db = connect_to_db()
+    cursor = db.cursor()
+    cursor.execute("INSERT INTO orders (user_name, address, total_price) VALUES (%s, %s, %s)",
+                   (user_name, address, total_price))
+    db.commit()
+    order_id = cursor.lastrowid  # Get the last inserted order ID
+
+    # Insert each item in the cart into the order_items table (optional)
+    for item in cart:
+        cursor.execute("INSERT INTO order_items (order_id, product_id, quantity) VALUES (%s, %s, %s)",
+                       (order_id, item["id"], 1))  # Assuming each product is added once
+    db.commit()
+
+    db.close()
+
+    # Show success message
+    messagebox.showinfo("Success", f"Order placed successfully! Total: ₹{total_price:.2f}")
+
+    # Show order details in a new window
+    show_order_details(user_name, address, total_price)
+
+    # Clear the cart after the order is placed
+    clear_cart()
+
+# Clear the shopping cart
+def clear_cart():
+    global cart
+    cart = []
+    update_cart_display()
+
+# Set the background image dynamically to fit the window size
+def set_bg_image(event=None):
+    # Load the image and resize it based on the window size
+    bg_image = Image.open("C:/Users/user/Desktop/project 1/imagem33.jpg")  # Replace with your image path
+    bg_image = bg_image.resize((root.winfo_width(), root.winfo_height()), Image.Resampling.LANCZOS)
+
+    bg_photo = ImageTk.PhotoImage(bg_image)
+
+    # Create a Label widget to display the background image
+    if hasattr(set_bg_image, "bg_label"):
+        # If the label exists, update the image
+        set_bg_image.bg_label.config(image=bg_photo)
+        set_bg_image.bg_label.image = bg_photo
+    else:
+        # Create the background label if it doesn't exist
+        set_bg_image.bg_label = tk.Label(root, image=bg_photo)
+        set_bg_image.bg_label.place(relwidth=1, relheight=1)  # Make the image cover the entire window
+        set_bg_image.bg_label.image = bg_photo
+
+# Create the GUI
+root = tk.Tk()
+root.title("Shopping Cart")
+
+# Set initial window size
+root.geometry("800x600")
+
+# Bind the window resize event to update the background image
+root.bind("<Configure>", set_bg_image)
+
+# Set the initial background image
+set_bg_image()
+
+# Global cart list
+cart = []
+
+# Product list display
+product_list_frame = tk.Frame(root)
+product_list_frame.pack(pady=20)
+
+products = load_products()
+for product in products:
+    product_button = tk.Button(product_list_frame, text=f"{product[1]} - ₹{convert_to_inr(product[2]):.2f}", width=40,
+                               command=lambda p=product: add_to_cart(p[0], p[1], p[2]))
+    product_button.pack(pady=5)
+
+# Cart display
+cart_frame = tk.Frame(root)
+cart_frame.pack(pady=20)
+
+cart_display = tk.Text(cart_frame, height=10, width=40)
+cart_display.pack()
+
+total_label = tk.Label(cart_frame, text="Total: ₹0.00")
+total_label.pack(pady=5)
+
+# User details for checkout
+user_details_frame = tk.Frame(root)
+user_details_frame.pack(pady=20)
+
+user_name_label = tk.Label(user_details_frame, text="Name:")
+user_name_label.grid(row=0, column=0)
+user_name_entry = tk.Entry(user_details_frame, width=40)
+user_name_entry.grid(row=0, column=1)
+
+address_label = tk.Label(user_details_frame, text="Address:")
+address_label.grid(row=1, column=0)
+address_entry = tk.Text(user_details_frame, width=40, height=4)
+address_entry.grid(row=1, column=1)
+
+# Checkout button
+checkout_button = tk.Button(root, text="Checkout", command=checkout)
+checkout_button.pack(pady=20)
+
+# Run the GUI
+#root.mainloop()
+
+try:
+    root.mainloop()
+except KeyboardInterrupt:
+    print("Program was interrupted")
+
