@@ -1,0 +1,106 @@
+-- Create the database
+CREATE DATABASE shoppings;
+show tables;
+-- Use the shopping_cart database
+USE shoppings;
+
+-- Create the products table
+CREATE TABLE products (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    price DECIMAL(10, 2) NOT NULL,
+    category VARCHAR(100)
+);
+
+-- Sample products
+INSERT INTO products (name, price, category) VALUES ('Laptop',999 , 'Electronics');
+INSERT INTO products (name, price, category) VALUES ('Smartphone',499 , 'Electronics');
+INSERT INTO products (name, price, category) VALUES ('Headphones',19 , 'Electronics');
+INSERT INTO products (name, price, category) VALUES ('Speaker',21, 'Electronics');
+
+
+
+select * from products;
+select * from order_items;
+select * from orders;
+DELETE FROM products;
+
+DELETE FROM order_items;
+DELETE FROM orders;
+
+
+-- Create the orders table (simplified version)
+CREATE TABLE orders (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_name VARCHAR(255),
+    address TEXT,
+    total_price DECIMAL(10, 2),
+    order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+-- Create order_items table
+CREATE TABLE IF NOT EXISTS order_items (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    order_id INT NOT NULL,
+    product_id INT NOT NULL,
+    quantity INT NOT NULL,
+    FOREIGN KEY (order_id) REFERENCES orders(id),
+    FOREIGN KEY (product_id) REFERENCES products(id)
+);
+-- Step 1: Truncate the tables (deletes all data)
+TRUNCATE TABLE products;
+TRUNCATE TABLE order_items;
+TRUNCATE TABLE orders;
+SET FOREIGN_KEY_CHECKS = 0;
+delete from order_items;
+-- Step 2: Reset the auto-increment counters
+ALTER TABLE products AUTO_INCREMENT = 1;
+ALTER TABLE order_items AUTO_INCREMENT = 1;
+ALTER TABLE orders AUTO_INCREMENT = 1;
+
+-- Step 3: Insert new data (starting from id = 1)
+INSERT INTO products (name, price, category) VALUES ('Laptop', 999, 'Electronics');
+INSERT INTO products (name, price, category) VALUES ('Smartphone', 499, 'Electronics');
+INSERT INTO products (name, price, category) VALUES ('Headphones', 19, 'Electronics');
+INSERT INTO products (name, price, category) VALUES ('Speaker', 21, 'Electronics');
+INSERT INTO products (name, price, category) VALUES ('Wireless Headphone', 22, 'Electronics');
+INSERT INTO products (name, price, category) VALUES ('TV', 1001, 'Electronics');
+INSERT INTO products (name, price, category) VALUES ('Laptop Charger', 23, 'Electronics');
+INSERT INTO products (name, price, category) VALUES ('Mobile Charger', 24, 'Electronics');
+
+
+-- Step 4: Verify the products table to check the id values
+SELECT * FROM products;
+
+-- Step 5: Insert orders and order_items (which will start from id = 1)
+
+truncate products;
+truncate order_items;
+
+-- Step 6: Verify the order_items and orders table to check the id values
+SELECT * FROM products;
+SELECT * FROM order_items;
+select * from orders;
+-- Step 1: Disable foreign key checks
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- Step 2: Delete all rows from order_items (to remove foreign key references)
+DELETE FROM order_items;
+
+-- Step 3: Truncate the orders and products tables
+TRUNCATE TABLE orders;
+TRUNCATE TABLE products;
+TRUNCATE TABLE order_items;
+-- Step 4: Reset the auto-increment values for all relevant tables
+ALTER TABLE orders AUTO_INCREMENT = 1;
+ALTER TABLE order_items AUTO_INCREMENT = 1;
+ALTER TABLE products AUTO_INCREMENT = 1;
+
+-- Step 5: Re-enable foreign key checks
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- Step 6: Verify the tables are empty and auto-increment has been reset
+SELECT * FROM orders;
+SELECT * FROM order_items;
+SELECT * FROM products;
+
+
